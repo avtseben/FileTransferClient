@@ -6,32 +6,44 @@ public class ClientSide {
     private Socket s;
     private String host;
     private int port;
-    private boolean byteTransferMode = false;
+    private String fileName = new String();
 
     public ClientSide(String _host, int _port) {
 	host = _host;
 	port = _port;
-	s = new Socket();
+	fileName = "testfile";
+	//transferSocket = new Socket();
     }
     public void run() {
+	transferManager();
+    }
+    private void transferManager() {
+	try (
+	     Socket transferSocket = new Socket(host,port);
+	     PrintWriter out = new PrintWriter(transferSocket.getOutputStream(), true);
+	     BufferedReader in = new BufferedReader(
+	         new InputStreamReader(transferSocket.getInputStream()));
+	) {  
+	  if(in.readLine().equals("sayFileName")) {
+		 out.println("fileNameIs");
+		 out.println(fileName);
+		 if(in.readLine().equals("youCanStartTransfer"))
+		    transferFile(out);
+	     }
+
+	} catch (Exception e) {
+	    System.err.println("Cannot connect");
+	    System.err.println(e);
+	}
+    }
+    public void transferFile(PrintWriter out) {
 	try {
-	    BufferedReader in = new BufferedReader(new FileReader("infile"));//TODO Transfer name of file
+	    BufferedReader in = new BufferedReader(new FileReader(fileName));//TODO Transfer name of file
 	    try {
-		s.connect(new InetSocketAddress(host,port));
-		OutputStream outStream = s.getOutputStream();
-		PrintWriter out = new PrintWriter(outStream, true);
 		String line = new String();
 		      while((line = in.readLine()) != null) {
-			if(byteTransferMode){
-			  byte [] lineArrayByte = line.getBytes("utf-8"); 
-			  for(int i = 0; i < lineArrayByte.length; i++)  
-			      outStream.write(lineArrayByte[i]);
-			  outStream.write('\n');
-			} else {
-			    out.println(line);
-			}
+			out.println(line);
 		    }
-		s.close();
 		out.close();
 
 	    } catch (Exception e) {
